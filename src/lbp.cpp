@@ -61,7 +61,7 @@ void spatialUniLbpHist(const cv::Mat & src, cv::Mat & hist, int grid_x, int grid
     // calculate LBP patch size
     int width = src.cols/grid_x;
     int height = src.rows/grid_y;
-    hist = Mat::zeros(1, width * height * 59, CV_32FC1);
+    hist = Mat::zeros(1, grid_x * grid_y * 59, CV_32FC1);
 
     // initial result_row
 	int cellIdx = 0;

@@ -25,8 +25,13 @@ void UserVerifier::train(const vector<Mat>& src, cv::Mat& labels) {
 		Mat feature;
 		extracter(img, feature);
 		data.push_back(feature);
+		if (id == 0 && labels.at<int>(0, i) > 0) {
+			id = labels.at<int>(0, i);
+		}
 	}
-	model.train(data, labels);
+	Mat newLabels;
+	transpose(labels, newLabels);
+	model.train(data, newLabels);
 }
 
 float UserVerifier::verify(const cv::Mat& sign, ulong userID) const {
