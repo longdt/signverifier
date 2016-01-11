@@ -39,7 +39,7 @@ void hogPolar(const cv::Mat& src, cv::Mat& output);
 class UserVerifier : public SignatureVerifier {
 private:
 	ulong id;
-	CvSVM model;
+	cv::SVM model;
 	FeatureExtracter extracter;
 public:
 	UserVerifier(FeatureExtracter extracter);
@@ -53,12 +53,12 @@ class GlobalVerifier : public SignatureVerifier {
 private:
 	std::unordered_map<ulong, int> userIndex;
 	std::vector<cv::Mat> references;
-	CvSVM model;
+	cv::SVM model;
 	FeatureExtracter extracter;
 public:
 	GlobalVerifier(FeatureExtracter extracter);
 	virtual void train(const std::vector<cv::Mat>& src, cv::Mat& labels);
-	virtual void update(const std::vector<cv::Mat>& src, cv::Mat& labels);
+	virtual void addRefs(const std::vector<cv::Mat>& src, cv::Mat& labels);
 	virtual float verify(const cv::Mat& sign, ulong userID = 0) const;
 	virtual void load(const std::string& filename);
 	virtual void save(const std::string& filename) const;

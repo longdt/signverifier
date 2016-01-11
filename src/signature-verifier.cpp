@@ -28,7 +28,7 @@ bool startsWith(const string& haystack, const string& needle) {
         && equal(needle.begin(), needle.end(), haystack.begin());
 }
 
-void loadData(ulong id, vector<Mat>& data, Mat& labels) {
+void loadUData(ulong id, vector<Mat>& data, Mat& labels) {
 	stringstream ss;
 	ss << setw(3) << setfill('0') << id;
 	string prefix = ss.str() + "_";
@@ -43,7 +43,7 @@ void loadData(ulong id, vector<Mat>& data, Mat& labels) {
     int refCnt = 0;
     int forgCnt = 0;
     long label = 0;
-    int maxCnt = 5;
+    int maxCnt = 10;
     labels = Mat::zeros(1, maxCnt * 2, CV_32SC1);
     for (auto iter = files.begin(), iterend = files.end(); iter != iterend; ++iter) {
     	string file = iter->string();
@@ -62,12 +62,12 @@ void loadData(ulong id, vector<Mat>& data, Mat& labels) {
     }
 }
 
-int main() {
+int umain() {
 	UserVerifier verifier(lbpGrid);
 	vector<Mat> data;
 	Mat labels;
-	ulong id = 2;
-	loadData(id, data, labels);
+	ulong id = 4;
+	loadUData(id, data, labels);
 	verifier.train(data, labels);
 	//test
 	for (uint i = 0; i < data.size(); ++i) {
@@ -78,7 +78,7 @@ int main() {
 	}
 	cout << "test lan 2" <<endl;
 	data.clear();
-	loadData(id, data, labels);
+	loadUData(id, data, labels);
 	for (uint i = 0; i < data.size(); ++i) {
 		Mat sign = data[i];
 		imshow("sign", sign);
