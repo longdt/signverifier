@@ -160,6 +160,41 @@ void GlobalVerifier::save(const string& filename) const {
 
 }
 
+//mixture verifier
+MixtureVerifier::MixtureVerifier() : ulbps(), userIndex(),  glbp(lbpGrid) {
+
+}
+
+void MixtureVerifier::train(const std::vector<cv::Mat>& src, cv::Mat& labels) {
+	ulbps.clear();
+	//FIXME fix bug this comment
+//	ulbps.resize(labels.rows);
+	for (int u = 0; u < labels.rows; ++u) {
+		Mat ulabel = labels.row(u);
+		ulong uid = ulabel.at<int>(0, 0) > 0 ? ulabel.at<int>(0, 0) : - ulabel.at<int>(0, 0);
+		vector<Mat> data(src.begin() + u * labels.cols, src.begin() + (u + 1) * labels.cols);
+		ulbps[u].train(data, ulabel);
+		userIndex[uid] = u;
+	}
+}
+
+void MixtureVerifier::trainGlobal(const std::vector<cv::Mat>& src, cv::Mat& labels) {
+	glbp.train(src, labels);
+}
+
+float MixtureVerifier::verify(const cv::Mat& sign, ulong userID) const {
+	float score = glbp.verify(sign, userID) + ulbps[userID].verify(sign, userID);
+}
+
+void MixtureVerifier::load(const std::string& filename) {
+
+}
+
+void MixtureVerifier::save(const std::string& filename) const {
+
+}
+//end mixture verifier
+
 void lbpGrid(const cv::Mat& src, cv::Mat& output) {
 	spatialUniLbpHist(src, output, GRID_X, GRID_Y);
 }

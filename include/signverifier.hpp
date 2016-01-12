@@ -22,7 +22,7 @@ public:
 	virtual float verify(const cv::Mat& sign, ulong userID = 0) const = 0;
 	virtual void load(const std::string& filename) = 0;
 	virtual void save(const std::string& filename) const = 0;
-//	virtual ~SignatureVerifier();
+	virtual ~SignatureVerifier() {};
 };
 
 typedef void (*FeatureExtracter)(const cv::Mat& src, cv::Mat& output);
@@ -47,6 +47,7 @@ public:
 	virtual float verify(const cv::Mat& sign, ulong userID = 0) const;
 	virtual void load(const std::string& filename);
 	virtual void save(const std::string& filename) const;
+	virtual ~UserVerifier() {};
 };
 
 class GlobalVerifier : public SignatureVerifier {
@@ -62,6 +63,22 @@ public:
 	virtual float verify(const cv::Mat& sign, ulong userID = 0) const;
 	virtual void load(const std::string& filename);
 	virtual void save(const std::string& filename) const;
+	virtual ~GlobalVerifier() {};
+};
+
+class MixtureVerifier : public SignatureVerifier {
+private:
+	std::vector<UserVerifier> ulbps;
+	std::unordered_map<ulong, int> userIndex;
+	GlobalVerifier glbp;
+public:
+	MixtureVerifier();
+	virtual void train(const std::vector<cv::Mat>& src, cv::Mat& labels);
+	virtual void trainGlobal(const std::vector<cv::Mat>& src, cv::Mat& labels);
+	virtual float verify(const cv::Mat& sign, ulong userID = 0) const;
+	virtual void load(const std::string& filename);
+	virtual void save(const std::string& filename) const;
+	virtual ~MixtureVerifier() {};
 };
 
 }
