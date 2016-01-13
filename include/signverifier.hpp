@@ -10,6 +10,7 @@
 
 #include <opencv2/core/core.hpp>
 #include <opencv2/ml/ml.hpp>
+#include <memory>
 #include <unordered_map>
 #include <string>
 #include <vector>
@@ -52,8 +53,7 @@ public:
 
 class GlobalVerifier : public SignatureVerifier {
 private:
-	std::unordered_map<ulong, int> userIndex;
-	std::vector<cv::Mat> references;
+	std::unordered_map<ulong, cv::Mat> references;
 	cv::SVM model;
 	FeatureExtracter extracter;
 public:
@@ -68,8 +68,7 @@ public:
 
 class MixtureVerifier : public SignatureVerifier {
 private:
-	std::vector<UserVerifier> ulbps;
-	std::unordered_map<ulong, int> userIndex;
+	std::unordered_map<ulong, std::shared_ptr<UserVerifier>> ulbps;
 	GlobalVerifier glbp;
 public:
 	MixtureVerifier();

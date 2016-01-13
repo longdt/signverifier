@@ -50,7 +50,7 @@ void UserVerifier::save(const string& filename) const {
 
 }
 
-GlobalVerifier::GlobalVerifier(FeatureExtracter extracter) : userIndex(), references(), model(), extracter(extracter) {
+GlobalVerifier::GlobalVerifier(FeatureExtracter extracter) : references(), model(), extracter(extracter) {
 }
 
 void computeStdDev(const Mat& src, Mat& sd) {
@@ -73,7 +73,7 @@ void GlobalVerifier::train(const vector<Mat>& src, cv::Mat& labels) {
 	Mat1i newLabels;
 	for (int u = 0; u < labels.rows; ++u) {
 		ulong userID = labels.at<int>(u, 0) > 0 ? labels.at<int>(u, 0) : - labels.at<int>(u, 0);
-		Mat refs = references[userIndex[userID]];
+		Mat refs = references[userID];
 		Mat sigma = refs.row(refs.rows - 1);
 		//diff vector of forgeries
 		for (int l = 0; l < labels.cols; ++l) {
@@ -108,7 +108,6 @@ void GlobalVerifier::train(const vector<Mat>& src, cv::Mat& labels) {
 void GlobalVerifier::addRefs(const std::vector<cv::Mat>& src, cv::Mat& labels) {
 	if (!references.empty()) {
 		references.clear();
-		userIndex.clear();
 	}
 	int imgIdx = -1;
 	for (int u = 0; u < labels.rows; ++u) {
@@ -126,18 +125,17 @@ void GlobalVerifier::addRefs(const std::vector<cv::Mat>& src, cv::Mat& labels) {
 		Mat sd;
 		computeStdDev(refs, sd);
 		refs.push_back(sd);
-		references.push_back(refs);
-		userIndex[userID] = references.size() - 1;
+		references[userID] = refs;
 	}
 }
 
 float GlobalVerifier::verify(const cv::Mat& sign, ulong userID) const {
-	auto idx = userIndex.find(userID);
-	if (idx == userIndex.end()) {
+	auto idx = references.find(userID);
+	if (idx == references.end()) {
 		throw logic_error("doesn't support userid: " + userID);
 	}
 	Mat feature;
-	Mat refs = references[idx->second];
+	Mat refs = idx->second;
 	extracter(sign, feature);
 	float score = -1;
 	float maxScore = -1;
@@ -161,20 +159,19 @@ void GlobalVerifier::save(const string& filename) const {
 }
 
 //mixture verifier
-MixtureVerifier::MixtureVerifier() : ulbps(), userIndex(),  glbp(lbpGrid) {
+MixtureVerifier::MixtureVerifier() : ulbps(), glbp(lbpGrid) {
 
 }
 
 void MixtureVerifier::train(const std::vector<cv::Mat>& src, cv::Mat& labels) {
 	ulbps.clear();
-	//FIXME fix bug this comment
-//	ulbps.resize(labels.rows);
 	for (int u = 0; u < labels.rows; ++u) {
 		Mat ulabel = labels.row(u);
 		ulong uid = ulabel.at<int>(0, 0) > 0 ? ulabel.at<int>(0, 0) : - ulabel.at<int>(0, 0);
 		vector<Mat> data(src.begin() + u * labels.cols, src.begin() + (u + 1) * labels.cols);
-		ulbps[u].train(data, ulabel);
-		userIndex[uid] = u;
+		shared_ptr<UserVerifier> verifier = make_shared<UserVerifier>(lbpGrid);
+		verifier->train(data, ulabel);
+		ulbps[uid] = verifier;
 	}
 }
 
@@ -183,7 +180,14 @@ void MixtureVerifier::trainGlobal(const std::vector<cv::Mat>& src, cv::Mat& labe
 }
 
 float MixtureVerifier::verify(const cv::Mat& sign, ulong userID) const {
-	float score = glbp.verify(sign, userID) + ulbps[userID].verify(sign, userID);
+	auto idx = ulbps.find(userID);
+	if (idx == ulbps.end()) {
+		throw logic_error("doesn't support userid: " + userID);
+	}
+	float score = glbp.verify(sign, userID);
+	shared_ptr<UserVerifier> verifier = idx->second;
+	score += verifier->verify(sign, userID);
+	return score;
 }
 
 void MixtureVerifier::load(const std::string& filename) {
