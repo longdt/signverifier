@@ -35,8 +35,8 @@ void loadUIDData(const path& p, long id, vector<Mat>& data, Mat& labels) {
     int refCnt = 0;
     int forgCnt = 0;
     int label = 0;
-    int maxRefs = 10;
-    int maxForg = 4;
+    int maxRefs = 15;
+    int maxForg = (maxRefs - 1) / 2;
     Mat temp(1, maxRefs + maxForg, CV_32SC1);
     int idx = 0;
     for (auto iter = files.begin(), iterend = files.end(); iter != iterend; ++iter) {
@@ -97,7 +97,7 @@ int main() {
 				id = -id;
 			}
 			cout << verifier.verify(sign, id) << "\texpected: " << labels.at<int>(r, c) << endl;
-			waitKey(0);
+//			waitKey(0);
 			++idx;
 		}
 	}

@@ -23,50 +23,24 @@ using signverify::UserVerifier;
 using namespace cv;
 using namespace std;
 
-bool startsWith(const string& haystack, const string& needle) {
-    return needle.length() <= haystack.length()
-        && equal(needle.begin(), needle.end(), haystack.begin());
-}
+void loadMUIDData(const path& p, long id, vector<Mat>& data, Mat& labels);
 
 void loadUData(ulong id, vector<Mat>& data, Mat& labels) {
 	stringstream ss;
 	ss << setw(3) << setfill('0') << id;
-	string prefix = ss.str() + "_";
-	path p("/home/thienlong/Downloads/trainingSet/OfflineSignatures/Dutch/TrainingSet/Offline Genuine");
+	string uidFolder = ss.str();
+	path p("/home/thienlong/Downloads/Testdata_SigComp2011/SigComp11-Offlinetestset/Dutch/Reference(646)/" + uidFolder);
 	if (!exists(p) || !is_directory(p)) {
 		return;
 	}
-	vector<path> files;
-	std::copy(directory_iterator(p), directory_iterator(), std::back_inserter(files));
-	unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
-    std::shuffle(files.begin(), files.end(), std::default_random_engine(seed));
-    int refCnt = 0;
-    int forgCnt = 0;
-    long label = 0;
-    int maxCnt = 10;
-    labels = Mat::zeros(1, maxCnt * 2, CV_32SC1);
-    for (auto iter = files.begin(), iterend = files.end(); iter != iterend; ++iter) {
-    	string file = iter->string();
-    	string fileName = iter->filename().string();
-    	label = startsWith(fileName, prefix) ? id : -id;
-    	if ((label == id && refCnt == maxCnt) || (label == -id && forgCnt == maxCnt)) {
-    		continue;
-    	}
-    	data.push_back(imread(file, 0));
-    	labels.at<int>(0, data.size() - 1) = label;
-    	if (label == id) {
-    		++refCnt;
-    	} else {
-    		++forgCnt;
-    	}
-    }
+	loadMUIDData(p, id, data, labels);
 }
 
 int umain() {
 	UserVerifier verifier(lbpGrid);
 	vector<Mat> data;
 	Mat labels;
-	ulong id = 4;
+	ulong id = 23;
 	loadUData(id, data, labels);
 	verifier.train(data, labels);
 	//test
@@ -74,15 +48,16 @@ int umain() {
 		Mat sign = data[i];
 		imshow("sign", sign);
 		cout << verifier.verify(sign, id) << "\texpected: " << labels.at<int>(0, i) << endl;
-		waitKey(0);
+//		waitKey(0);
 	}
 	cout << "test lan 2" <<endl;
 	data.clear();
+	labels = Mat();
 	loadUData(id, data, labels);
 	for (uint i = 0; i < data.size(); ++i) {
 		Mat sign = data[i];
 		imshow("sign", sign);
 		cout << verifier.verify(sign, id) << "\texpected: " << labels.at<int>(0, i) << endl;
-		waitKey(0);
+//		waitKey(0);
 	}
 }

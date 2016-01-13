@@ -9,10 +9,12 @@
 #include <stdexcept>
 
 #include "lbp.hpp"
+#include <cmath>
 using namespace std;
 using namespace cv;
 
 namespace signverify {
+#define DISTANCE_TO_PROB(distance) (1.0f / (1.0f + exp(distance * 6)))
 
 UserVerifier::UserVerifier(FeatureExtracter extracter) : id(0), model(), extracter(extracter) {
 }
@@ -39,7 +41,11 @@ float UserVerifier::verify(const cv::Mat& sign, ulong userID) const {
 	}
 	Mat feature;
 	extracter(sign, feature);
-	return model.predict(feature, true);
+	long label = model.predict(feature);
+	float distance = model.predict(feature, true);
+//	prob = abs(prob);
+//	return (label > 0) ? prob : (1 - prob);
+	return DISTANCE_TO_PROB(distance);
 }
 
 void UserVerifier::load(const string& filename) {
@@ -137,15 +143,16 @@ float GlobalVerifier::verify(const cv::Mat& sign, ulong userID) const {
 	Mat feature;
 	Mat refs = idx->second;
 	extracter(sign, feature);
-	float score = -1;
+	float prob = -1;
 	float maxScore = -1;
 	Mat diffFeature;
 	Mat sigma = refs.row(refs.rows - 1);
 	for (int i = 0; i < refs.rows - 1; ++i) {
 		diffFeature = feature - refs.row(i);
 		diffFeature = diffFeature / sigma;
-		score = model.predict(diffFeature);
-		maxScore = max(score, maxScore);
+		float distance = model.predict(diffFeature, true);
+		prob = DISTANCE_TO_PROB(distance);
+		maxScore = max(prob, maxScore);
 	}
 	return maxScore;
 }
@@ -173,6 +180,7 @@ void MixtureVerifier::train(const std::vector<cv::Mat>& src, cv::Mat& labels) {
 		verifier->train(data, ulabel);
 		ulbps[uid] = verifier;
 	}
+	glbp.addRefs(src, labels);
 }
 
 void MixtureVerifier::trainGlobal(const std::vector<cv::Mat>& src, cv::Mat& labels) {
