@@ -20,7 +20,7 @@ namespace signverify {
 class SignatureVerifier {
 public:
 	virtual void train(const std::vector<cv::Mat>& src, cv::Mat& labels) = 0;
-	virtual float verify(const cv::Mat& sign, ulong userID = 0) const = 0;
+	virtual float verify(const cv::Mat& sign, ulong userID) const = 0;
 	virtual void load(const std::string& filename) = 0;
 	virtual void save(const std::string& filename) const = 0;
 	virtual ~SignatureVerifier() {};
@@ -45,7 +45,7 @@ private:
 public:
 	UserVerifier(FeatureExtracter extracter);
 	virtual void train(const std::vector<cv::Mat>& src, cv::Mat& labels);
-	virtual float verify(const cv::Mat& sign, ulong userID = 0) const;
+	virtual float verify(const cv::Mat& sign, ulong userID) const;
 	virtual void load(const std::string& filename);
 	virtual void save(const std::string& filename) const;
 	virtual ~UserVerifier() {};
@@ -60,7 +60,7 @@ public:
 	GlobalVerifier(FeatureExtracter extracter);
 	virtual void train(const std::vector<cv::Mat>& src, cv::Mat& labels);
 	virtual void addRefs(const std::vector<cv::Mat>& src, cv::Mat& labels);
-	virtual float verify(const cv::Mat& sign, ulong userID = 0) const;
+	virtual float verify(const cv::Mat& sign, ulong userID) const;
 	virtual void load(const std::string& filename);
 	virtual void save(const std::string& filename) const;
 	virtual ~GlobalVerifier() {};
@@ -74,7 +74,7 @@ public:
 	MixtureVerifier();
 	virtual void train(const std::vector<cv::Mat>& src, cv::Mat& labels);
 	virtual void trainGlobal(const std::vector<cv::Mat>& src, cv::Mat& labels);
-	virtual float verify(const cv::Mat& sign, ulong userID = 0) const;
+	virtual float verify(const cv::Mat& sign, ulong userID) const;
 	virtual void load(const std::string& filename);
 	virtual void save(const std::string& filename) const;
 	virtual ~MixtureVerifier() {};
