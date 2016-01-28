@@ -13,7 +13,7 @@ namespace signverify {
 void uniformLbpHist(const cv::Mat & img_gray, cv::Mat & hist);
 void spatialUniLbpHist(const cv::Mat & img_gray, cv::Mat & hist, int grid_x,
 		int grid_y);
-
+void riuLbpHist(const cv::Mat& src, int radius, int neighbors, cv::Mat& hist);
 }
 
 #endif /* LBP_HPP_ */
