@@ -51,8 +51,8 @@ void uniformLbpHist(const Mat & img_gray, Mat & hist) {
 		for (int c = 1; c < img.cols - 1; ++c) {
 			uchar uv = lbp(img, c, r);
 			hist.at<float>(0, uniform[uv])++; // incr. the resp. histogram bin
-			}
 		}
+	}
 	hist /= ((img.rows - 2) * (img.cols - 2));
 }
 

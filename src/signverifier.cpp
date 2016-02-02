@@ -12,6 +12,7 @@
 #include <cmath>
 
 #include "opencv2/objdetect/objdetect.hpp"
+#include "opencv2/imgproc/imgproc.hpp"
 
 using namespace std;
 using namespace cv;
@@ -248,7 +249,20 @@ void displaceHist(const cv::Mat& sign, cv::Mat& dist) {
 }
 
 void lbpGrid(const cv::Mat& src, cv::Mat& output) {
-	spatialUniLbpHist(src, output, GRID_X, GRID_Y);
+	imshow("src", src);
+	Mat refineSrc;
+	removeBackground(src, refineSrc, 4);
+	displaceHist(refineSrc, refineSrc);
+
+	int width = static_cast<int>(ceil(src.cols / (float) GRID_X));
+	int height = static_cast<int>(ceil(src.rows / (float) GRID_Y));
+	int padrigh = width * GRID_X - src.cols;
+	int padbottom = height * GRID_Y - src.rows;
+	Mat padSrc;
+	copyMakeBorder(refineSrc, padSrc, 0, padbottom, 0, padrigh, BORDER_CONSTANT, Scalar(255));
+	imshow("padSrc", padSrc);
+	waitKey(0);
+	spatialUniLbpHist(padSrc, output, GRID_X, GRID_Y);
 }
 
 void hogGrid(const cv::Mat& src, cv::Mat& output) {

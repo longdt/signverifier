@@ -18,8 +18,7 @@
 
 using boost::filesystem::path;
 using boost::filesystem::directory_iterator;
-using signverify::lbpGrid;
-using signverify::UserVerifier;
+using namespace signverify;
 using namespace cv;
 using namespace std;
 
@@ -40,13 +39,13 @@ int umain() {
 	UserVerifier verifier(lbpGrid);
 	vector<Mat> data;
 	Mat labels;
-	ulong id = 23;
+	ulong id = 18 ;
 	loadUData(id, data, labels);
 	verifier.train(data, labels);
 	//test
 	for (uint i = 0; i < data.size(); ++i) {
 		Mat sign = data[i];
-		imshow("sign", sign);
+//		imshow("sign", sign);
 		cout << verifier.verify(sign, id) << "\texpected: " << labels.at<int>(0, i) << endl;
 //		waitKey(0);
 	}
@@ -56,8 +55,18 @@ int umain() {
 	loadUData(id, data, labels);
 	for (uint i = 0; i < data.size(); ++i) {
 		Mat sign = data[i];
-		imshow("sign", sign);
+//		imshow("sign", sign);
 		cout << verifier.verify(sign, id) << "\texpected: " << labels.at<int>(0, i) << endl;
 //		waitKey(0);
 	}
+
+	cout << "test lan 3" <<endl;
+	path p("/home/thienlong/Downloads/Testdata_SigComp2011/SigComp11-Offlinetestset/Dutch/Questioned(1287)/0" + std::to_string(id));
+	for (auto&& file : directory_iterator(p)) {
+		Mat sign = imread(file.path().string(), 0);
+//		imshow("sign", sign);
+		float score = verifier.verify(sign, id);
+		cout << file.path().string() << ":\t" << id << "\t" << score << endl;
+	}
+
 }
