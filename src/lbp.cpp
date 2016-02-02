@@ -77,6 +77,7 @@ void spatialUniLbpHist(const cv::Mat & src, cv::Mat & hist, int grid_x,
 	}
 }
 
+//@tested
 template<typename _Tp> inline float pixelAt(const cv::Mat& src, float x,
 		float y) {
 	// relative indices
