@@ -10,11 +10,15 @@
 
 #include "lbp.hpp"
 #include <cmath>
+
+#include "opencv2/objdetect/objdetect.hpp"
+
 using namespace std;
 using namespace cv;
 
 namespace signverify {
-#define DISTANCE_TO_PROB(distance) (1.0f / (1.0f + exp(distance * 6)))
+//#define DISTANCE_TO_PROB(distance) (1.0f / (1.0f + exp(distance * 6)))
+#define DISTANCE_TO_PROB(distance) (-distance)
 
 UserVerifier::UserVerifier(FeatureExtracter extracter) : id(0), model(), extracter(extracter) {
 }
@@ -92,7 +96,7 @@ void GlobalVerifier::train(const vector<Mat>& src, cv::Mat& labels) {
 			//generate diff vector
 			for (int i = 0; i < refs.rows - 1; ++i) {
 				Mat diffFeature = feature - refs.row(i);
-				diffFeature = diffFeature / sigma;
+				divide(diffFeature, sigma, diffFeature);
 				data.push_back(diffFeature);
 				newLabels.push_back(-1);
 			}
@@ -102,7 +106,7 @@ void GlobalVerifier::train(const vector<Mat>& src, cv::Mat& labels) {
 			Mat ref = refs.row(i);
 			for (int j = i + 1; j < refs.rows - 1; ++j) {
 				Mat diffFeature = ref - refs.row(j);
-				diffFeature = diffFeature / sigma;
+				divide(diffFeature, sigma, diffFeature);
 				data.push_back(diffFeature);
 				newLabels.push_back(1);
 			}
@@ -144,7 +148,7 @@ float GlobalVerifier::verify(const cv::Mat& sign, ulong userID) const {
 	Mat refs = idx->second;
 	extracter(sign, feature);
 	float prob = -1;
-	float maxScore = -1;
+	float maxScore = -9;
 	Mat diffFeature;
 	Mat sigma = refs.row(refs.rows - 1);
 	for (int i = 0; i < refs.rows - 1; ++i) {
@@ -166,25 +170,34 @@ void GlobalVerifier::save(const string& filename) const {
 }
 
 //mixture verifier
-MixtureVerifier::MixtureVerifier() : ulbps(), glbp(lbpGrid) {
+MixtureVerifier::MixtureVerifier() : ulbps(), uhogs(), glbp(lbpGrid), ghog(hogGrid) {
 
 }
 
 void MixtureVerifier::train(const std::vector<cv::Mat>& src, cv::Mat& labels) {
 	ulbps.clear();
+	uhogs.clear();
 	for (int u = 0; u < labels.rows; ++u) {
 		Mat ulabel = labels.row(u);
 		ulong uid = ulabel.at<int>(0, 0) > 0 ? ulabel.at<int>(0, 0) : - ulabel.at<int>(0, 0);
 		vector<Mat> data(src.begin() + u * labels.cols, src.begin() + (u + 1) * labels.cols);
-		shared_ptr<UserVerifier> verifier = make_shared<UserVerifier>(lbpGrid);
-		verifier->train(data, ulabel);
-		ulbps[uid] = verifier;
+		//train ulbps
+		shared_ptr<UserVerifier> lbpVerifier = make_shared<UserVerifier>(lbpGrid);
+		lbpVerifier->train(data, ulabel);
+		ulbps[uid] = lbpVerifier;
+		//train uhogs
+		shared_ptr<UserVerifier> hogVerifier = make_shared<UserVerifier>(hogGrid);
+		hogVerifier->train(data, ulabel);
+		uhogs[uid] = hogVerifier;
+
 	}
 	glbp.addRefs(src, labels);
+	ghog.addRefs(src, labels);
 }
 
 void MixtureVerifier::trainGlobal(const std::vector<cv::Mat>& src, cv::Mat& labels) {
 	glbp.train(src, labels);
+	ghog.train(src, labels);
 }
 
 float MixtureVerifier::verify(const cv::Mat& sign, ulong userID) const {
@@ -192,9 +205,11 @@ float MixtureVerifier::verify(const cv::Mat& sign, ulong userID) const {
 	if (idx == ulbps.end()) {
 		throw logic_error("doesn't support userid: " + userID);
 	}
-	float score = glbp.verify(sign, userID);
+	float score = glbp.verify(sign, userID) + ghog.verify(sign, userID);
 	shared_ptr<UserVerifier> verifier = idx->second;
 	score += verifier->verify(sign, userID);
+	idx = uhogs.find(userID);
+	score += idx->second->verify(sign, userID);
 	return score;
 }
 
@@ -207,11 +222,49 @@ void MixtureVerifier::save(const std::string& filename) const {
 }
 //end mixture verifier
 
+//@tested
+void removeBackground(const cv::Mat& sign, cv::Mat& dist, int postLevel) {
+	dist.create(sign.size(), CV_8U);
+	for (int r = 0; r < sign.rows; ++r) {
+		for (int c = 0; c < sign.cols; ++c) {
+			int pixel = round(round(sign.at<uchar>(r, c) * postLevel / 255.0) * 255.0 / postLevel);
+			dist.at<uchar>(r, c) = (pixel == 255) ? 255 : sign.at<uchar>(r, c);
+		}
+	}
+}
+
+//@tested
+void displaceHist(const cv::Mat& sign, cv::Mat& dist) {
+	dist.create(sign.size(), CV_8U);
+	double min;
+	minMaxLoc(sign, &min);
+	int minPixel = min;
+	for (int r = 0; r < sign.rows; ++r) {
+		for (int c = 0; c < sign.cols; ++c) {
+			int pixel = sign.at<uchar>(r, c);
+			dist.at<uchar>(r, c) = (pixel == 255) ? 255 : pixel - minPixel;
+		}
+	}
+}
+
 void lbpGrid(const cv::Mat& src, cv::Mat& output) {
 	spatialUniLbpHist(src, output, GRID_X, GRID_Y);
 }
 
-void hogGrid(const cv::Mat& src, cv::Mat& output);
+void hogGrid(const cv::Mat& src, cv::Mat& output) {
+    int width = src.cols/GRID_X;
+    int height = src.rows/GRID_Y;
+    Size winSize(width * GRID_X, height * GRID_Y);
+    Mat img = src(Rect(0, 0, winSize.width, winSize.height));
+	HOGDescriptor hog(winSize, Size(width, height), Size(width, height), Size(width, height), 9);
+	vector<float> ders;
+	vector<Point> locs;
+	hog.compute(img, ders, Size(0, 0), Size(0,0), locs);
+	output.create(1, ders.size(), CV_32FC1);
+	for (int i = 0; i < ders.size(); i++) {
+		output.at<float>(0, i) = ders.at(i);
+	}
+}
 
 void hogPolar(const cv::Mat& src, cv::Mat& output);
 }

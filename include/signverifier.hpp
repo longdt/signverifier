@@ -16,6 +16,8 @@
 #include <vector>
 
 namespace signverify {
+void removeBackground(const cv::Mat& sign, cv::Mat& dist, int postLevel);
+void displaceHist(const cv::Mat& sign, cv::Mat& dist);
 
 class SignatureVerifier {
 public:
@@ -69,7 +71,9 @@ public:
 class MixtureVerifier : public SignatureVerifier {
 private:
 	std::unordered_map<ulong, std::shared_ptr<UserVerifier>> ulbps;
+	std::unordered_map<ulong, std::shared_ptr<UserVerifier>> uhogs;
 	GlobalVerifier glbp;
+	GlobalVerifier ghog;
 public:
 	MixtureVerifier();
 	virtual void train(const std::vector<cv::Mat>& src, cv::Mat& labels);
