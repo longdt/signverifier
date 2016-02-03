@@ -249,7 +249,7 @@ void displaceHist(const cv::Mat& sign, cv::Mat& dist) {
 }
 
 void lbpGrid(const cv::Mat& src, cv::Mat& output) {
-	imshow("src", src);
+//	imshow("src", src);
 	Mat refineSrc;
 	removeBackground(src, refineSrc, 4);
 	displaceHist(refineSrc, refineSrc);
@@ -260,24 +260,51 @@ void lbpGrid(const cv::Mat& src, cv::Mat& output) {
 	int padbottom = height * GRID_Y - src.rows;
 	Mat padSrc;
 	copyMakeBorder(refineSrc, padSrc, 0, padbottom, 0, padrigh, BORDER_CONSTANT, Scalar(255));
-	imshow("padSrc", padSrc);
-	waitKey(0);
+//	imshow("padSrc", padSrc);
+//	waitKey(0);
 	spatialUniLbpHist(padSrc, output, GRID_X, GRID_Y);
 }
 
+void riuLbpGrid(const cv::Mat& src, cv::Mat& output) {
+//	imshow("src", src);
+	Mat refineSrc;
+	removeBackground(src, refineSrc, 4);
+	displaceHist(refineSrc, refineSrc);
+
+	int width = static_cast<int>(ceil(src.cols / (float) GRID_X));
+	int height = static_cast<int>(ceil(src.rows / (float) GRID_Y));
+	int padrigh = width * GRID_X - src.cols;
+	int padbottom = height * GRID_Y - src.rows;
+	Mat padSrc;
+	copyMakeBorder(refineSrc, padSrc, 0, padbottom, 0, padrigh, BORDER_CONSTANT, Scalar(255));
+//	imshow("padSrc", padSrc);
+//	waitKey(0);
+	spatialRiuLbpHist(padSrc, 2, 16, output, GRID_X, GRID_Y);
+}
+
 void hogGrid(const cv::Mat& src, cv::Mat& output) {
-    int width = src.cols/GRID_X;
-    int height = src.rows/GRID_Y;
-    Size winSize(width * GRID_X, height * GRID_Y);
-    Mat img = src(Rect(0, 0, winSize.width, winSize.height));
-	HOGDescriptor hog(winSize, Size(width, height), Size(width, height), Size(width, height), 9);
+//	imshow("src", src);
+	Mat refineSrc;
+	removeBackground(src, refineSrc, 4);
+	displaceHist(refineSrc, refineSrc);
+
+	int width = static_cast<int>(ceil(src.cols / (float) GRID_X));
+	int height = static_cast<int>(ceil(src.rows / (float) GRID_Y));
+	int padrigh = width * GRID_X - src.cols;
+	int padbottom = height * GRID_Y - src.rows;
+	Mat padSrc;
+	copyMakeBorder(refineSrc, padSrc, 0, padbottom, 0, padrigh, BORDER_CONSTANT, Scalar(255));
+
+	HOGDescriptor hog(padSrc.size(), Size(width, height), Size(width, height), Size(width, height), 9);
 	vector<float> ders;
 	vector<Point> locs;
-	hog.compute(img, ders, Size(0, 0), Size(0,0), locs);
+	hog.compute(padSrc, ders, Size(0, 0), Size(0,0), locs);
 	output.create(1, ders.size(), CV_32FC1);
 	for (int i = 0; i < ders.size(); i++) {
 		output.at<float>(0, i) = ders.at(i);
 	}
+//		imshow("padSrc", padSrc);
+//		waitKey(0);
 }
 
 void hogPolar(const cv::Mat& src, cv::Mat& output);

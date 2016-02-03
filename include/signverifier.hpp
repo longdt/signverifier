@@ -36,6 +36,7 @@ typedef void (*FeatureExtracter)(const cv::Mat& src, cv::Mat& output);
 #define POLAR_DISTANCE 15
 
 void lbpGrid(const cv::Mat& src, cv::Mat& output);
+void riuLbpGrid(const cv::Mat& src, cv::Mat& output);
 void hogGrid(const cv::Mat& src, cv::Mat& output);
 void hogPolar(const cv::Mat& src, cv::Mat& output);
 

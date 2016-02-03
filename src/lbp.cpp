@@ -46,7 +46,6 @@ void uniformLbpHist(const Mat & img_gray, Mat & hist) {
 	hist = Mat::zeros(1, 59, CV_32F);
 
 	Mat_<uchar> img(img_gray);
-
 	for (int r = 1; r < img.rows - 1; ++r) {
 		for (int c = 1; c < img.cols - 1; ++c) {
 			uchar uv = lbp(img, c, r);
@@ -61,7 +60,7 @@ void spatialUniLbpHist(const cv::Mat & src, cv::Mat & hist, int grid_x,
 	// calculate LBP patch size
 	int width = src.cols / grid_x;
 	int height = src.rows / grid_y;
-	hist = Mat::zeros(1, grid_x * grid_y * 59, CV_32FC1);
+	hist.create(1, grid_x * grid_y * 59, CV_32FC1);
 
 	// initial result_row
 	int cellIdx = 0;
@@ -134,6 +133,28 @@ void riuLbpHist(const cv::Mat& src, int radius, int neighbors, cv::Mat& hist) {
 		for (int c = radius; c < src.cols - radius; c++) {
 			int lbp = riuLbp(src, r, c, radius, neighbors);
 			hist.at<float>(0, lbp)++;
+		}
+	}
+	hist /= ((src.rows - 2 * radius) * (src.cols - 2 * radius));
+}
+
+void spatialRiuLbpHist(const cv::Mat& src, int radius, int neighbors, cv::Mat& hist, int grid_x, int grid_y) {
+	// calculate LBP patch size
+	int width = src.cols / grid_x;
+	int height = src.rows / grid_y;
+	int histBin = neighbors + 2;
+	hist.create(1, grid_x * grid_y * histBin, CV_32FC1);
+
+	// initial result_row
+	int cellIdx = 0;
+	// iterate through grid
+	for (int i = 0; i < grid_y; i++) {
+		for (int j = 0; j < grid_x; j++) {
+			Mat src_cell = Mat(src, Range(i * height, (i + 1) * height),
+					Range(j * width, (j + 1) * width));
+			Mat cell_hist = Mat(hist, Rect(cellIdx * histBin, 0, histBin, 1));
+			riuLbpHist(src_cell, radius, neighbors, cell_hist);
+			cellIdx++;
 		}
 	}
 }
