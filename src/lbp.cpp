@@ -159,5 +159,60 @@ void spatialRiuLbpHist(const cv::Mat& src, int radius, int neighbors, cv::Mat& h
 	}
 }
 
+//special case riuLbp1_8
+static uchar riuTable18[256] = {
+		0, 1, 1, 2, 1, 9, 2, 3, 1, 9, 9, 9, 2, 9, 3, 4,
+		1, 9, 9, 9, 9, 9, 9, 9, 2, 9, 9, 9, 3, 9, 4, 5,
+		1, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9,
+		2, 9, 9, 9, 9, 9, 9, 9, 3, 9, 9, 9, 4, 9, 5, 6,
+		1, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9,
+		9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9,
+		2, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9,
+		3, 9, 9, 9, 9, 9, 9, 9, 4, 9, 9, 9, 5, 9, 6, 7,
+		1, 2, 9, 3, 9, 9, 9, 4, 9, 9, 9, 9, 9, 9, 9, 5,
+		9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 6,
+		9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9,
+		9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 7,
+		2, 3, 9, 4, 9, 9, 9, 5, 9, 9, 9, 9, 9, 9, 9, 6,
+		9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 7,
+		3, 4, 9, 5, 9, 9, 9, 6, 9, 9, 9, 9, 9, 9, 9, 7,
+		4, 5, 9, 6, 9, 9, 9, 7, 5, 6, 9, 7, 6, 7, 7, 8
+};
+
+void riuLbpHist1_8(const Mat & img_gray, Mat & hist) {
+	// 59 bins, bin 58 is the noise/non-uniform slot:
+	hist = Mat::zeros(1, 10, CV_32F);
+
+	Mat_<uchar> img(img_gray);
+	for (int r = 1; r < img.rows - 1; ++r) {
+		for (int c = 1; c < img.cols - 1; ++c) {
+			uchar uv = lbp(img, c, r);
+			hist.at<float>(0, riuTable18[uv])++; // incr. the resp. histogram bin
+		}
+	}
+	hist /= ((img.rows - 2) * (img.cols - 2));
+}
+
+void spatialRiuLbpHist1_8(const cv::Mat & src, cv::Mat & hist, int grid_x,
+		int grid_y) {
+	// calculate LBP patch size
+	int width = src.cols / grid_x;
+	int height = src.rows / grid_y;
+	hist.create(1, grid_x * grid_y * 10, CV_32FC1);
+
+	// initial result_row
+	int cellIdx = 0;
+	// iterate through grid
+	for (int i = 0; i < grid_y; i++) {
+		for (int j = 0; j < grid_x; j++) {
+			Mat src_cell = Mat(src, Range(i * height, (i + 1) * height),
+					Range(j * width, (j + 1) * width));
+			Mat cell_hist = Mat(hist, Rect(cellIdx * 10, 0, 10, 1));
+			riuLbpHist1_8(src_cell, cell_hist);
+			cellIdx++;
+		}
+	}
+}
+
 }
 
