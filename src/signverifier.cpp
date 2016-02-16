@@ -48,8 +48,6 @@ float UserVerifier::verify(const cv::Mat& sign, ulong userID) const {
 	extracter(sign, feature);
 	long label = model.predict(feature);
 	float distance = model.predict(feature, true);
-//	prob = abs(prob);
-//	return (label > 0) ? prob : (1 - prob);
 	return DISTANCE_TO_PROB(distance);
 }
 
@@ -64,6 +62,7 @@ void UserVerifier::save(const string& filename) const {
 GlobalVerifier::GlobalVerifier(FeatureExtracter extracter) : references(), model(), extracter(extracter) {
 }
 
+//@tested
 void computeStdDev(const Mat& src, Mat& sd) {
     cv::Mat meanValue;
     cv::Mat stdValue;
@@ -72,6 +71,10 @@ void computeStdDev(const Mat& src, Mat& sd) {
         cv::meanStdDev(src.col(i), meanValue, stdValue);
         sd.at<float>(i) = stdValue.at<double>(0) + 0.0000000001f;
     }
+}
+
+inline void diffFeature(const Mat& feature, const Mat& ref, Mat& dst, const Mat& sigma) {
+	absdiff(feature, ref, dst);
 }
 
 void GlobalVerifier::train(const vector<Mat>& src, cv::Mat& labels) {
@@ -96,9 +99,9 @@ void GlobalVerifier::train(const vector<Mat>& src, cv::Mat& labels) {
 			extracter(src[imgIdx], feature);
 			//generate diff vector
 			for (int i = 0; i < refs.rows - 1; ++i) {
-				Mat diffFeature = feature - refs.row(i);
-				divide(diffFeature, sigma, diffFeature);
-				data.push_back(diffFeature);
+				Mat diffeat;
+				diffFeature(feature, refs.row(i), diffeat, sigma);
+				data.push_back(diffeat);
 				newLabels.push_back(-1);
 			}
 		}
@@ -106,9 +109,9 @@ void GlobalVerifier::train(const vector<Mat>& src, cv::Mat& labels) {
 		for (int i = 0; i < refs.rows - 2; ++i) {
 			Mat ref = refs.row(i);
 			for (int j = i + 1; j < refs.rows - 1; ++j) {
-				Mat diffFeature = ref - refs.row(j);
-				divide(diffFeature, sigma, diffFeature);
-				data.push_back(diffFeature);
+				Mat diffeat;
+				diffFeature(ref, refs.row(j), diffeat, sigma);
+				data.push_back(diffeat);
 				newLabels.push_back(1);
 			}
 		}
@@ -116,6 +119,7 @@ void GlobalVerifier::train(const vector<Mat>& src, cv::Mat& labels) {
 	model.train(data, newLabels);
 }
 
+//@tested
 void GlobalVerifier::addRefs(const std::vector<cv::Mat>& src, cv::Mat& labels) {
 	if (!references.empty()) {
 		references.clear();
@@ -150,16 +154,17 @@ float GlobalVerifier::verify(const cv::Mat& sign, ulong userID) const {
 	extracter(sign, feature);
 	float prob = -1;
 	float maxScore = -9;
-	Mat diffFeature;
+	float sumScore = 0;
+	Mat diffeat;
 	Mat sigma = refs.row(refs.rows - 1);
 	for (int i = 0; i < refs.rows - 1; ++i) {
-		diffFeature = feature - refs.row(i);
-		diffFeature = diffFeature / sigma;
-		float distance = model.predict(diffFeature, true);
+		diffFeature(feature, refs.row(i), diffeat, sigma);
+		float distance = model.predict(diffeat, true);
 		prob = DISTANCE_TO_PROB(distance);
 		maxScore = max(prob, maxScore);
+		sumScore += prob;
 	}
-	return maxScore;
+	return sumScore / (refs.rows - 1);
 }
 
 void GlobalVerifier::load(const string& filename) {
@@ -279,7 +284,7 @@ void riuLbpGrid(const cv::Mat& src, cv::Mat& output) {
 	copyMakeBorder(refineSrc, padSrc, 0, padbottom, 0, padrigh, BORDER_CONSTANT, Scalar(255));
 //	imshow("padSrc", padSrc);
 //	waitKey(0);
-	spatialRiuLbpHist(padSrc, 2, 16, output, GRID_X, GRID_Y);
+	spatialRiuLbpHist1_8(padSrc, output, GRID_X, GRID_Y);
 }
 
 void hogGrid(const cv::Mat& src, cv::Mat& output) {
