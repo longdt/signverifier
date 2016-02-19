@@ -19,6 +19,8 @@ namespace signverify {
 #define POLAR_CENTER_ANGULAR 12
 #define POLAR_DISTANCE 15
 
+//preprocessing
+
 //@tested
 void removeBackground(const cv::Mat& sign, cv::Mat& dist, int postLevel) {
 	dist.create(sign.size(), CV_8U);
@@ -44,42 +46,42 @@ void displaceHist(const cv::Mat& sign, cv::Mat& dist) {
 	}
 }
 
-void lbpGrid(const cv::Mat& src, cv::Mat& output) {
-//	imshow("src", src);
-	Mat refineSrc;
-	removeBackground(src, refineSrc, 4);
-	displaceHist(refineSrc, refineSrc);
+//end preprocessing
 
+template <typename FeatureExtracter> void featureGrid(const cv::Mat& src, cv::Mat& output, FeatureExtracter extractor) {
 	int width = static_cast<int>(ceil(src.cols / (float) GRID_X));
 	int height = static_cast<int>(ceil(src.rows / (float) GRID_Y));
 	int padrigh = width * GRID_X - src.cols;
 	int padbottom = height * GRID_Y - src.rows;
 	Mat padSrc;
-	copyMakeBorder(refineSrc, padSrc, 0, padbottom, 0, padrigh, BORDER_CONSTANT, Scalar(255));
-//	imshow("padSrc", padSrc);
-//	waitKey(0);
-	spatialUniLbpHist(padSrc, output, GRID_X, GRID_Y);
+	copyMakeBorder(src, padSrc, 0, padbottom, 0, padrigh, BORDER_CONSTANT, Scalar(255));
+	for (int i = 0; i < GRID_Y; i++) {
+		for (int j = 0; j < GRID_X; j++) {
+			Mat src_cell = Mat(padSrc, Range(i * height, (i + 1) * height),
+					Range(j * width, (j + 1) * width));
+			Mat cell_hist;
+			extractor(src_cell, cell_hist);
+			output.push_back(cell_hist);
+		}
+	}
+	output = output.reshape(0, 1);
 }
 
-void riuLbpGrid(const cv::Mat& src, cv::Mat& output) {
-//	imshow("src", src);
+void lbpGrid(const cv::Mat& src, cv::Mat& output) {
 	Mat refineSrc;
 	removeBackground(src, refineSrc, 4);
 	displaceHist(refineSrc, refineSrc);
+	featureGrid(refineSrc, output, lbpHist);
+}
 
-//	int width = static_cast<int>(ceil(src.cols / (float) GRID_X));
-//	int height = static_cast<int>(ceil(src.rows / (float) GRID_Y));
-//	int padrigh = width * GRID_X - src.cols;
-//	int padbottom = height * GRID_Y - src.rows;
-//	Mat padSrc;
-//	copyMakeBorder(refineSrc, padSrc, 0, padbottom, 0, padrigh, BORDER_CONSTANT, Scalar(255));
-//	imshow("padSrc", padSrc);
-//	waitKey(0);
-	spatialRiuLbpHist(refineSrc, 2, 16, output, GRID_X, GRID_Y);
+void riuLbpGrid(const cv::Mat& src, cv::Mat& output) {
+	Mat refineSrc;
+	removeBackground(src, refineSrc, 4);
+	displaceHist(refineSrc, refineSrc);
+	featureGrid(refineSrc, output, riuLbpHist1_8);
 }
 
 void hogGrid(const cv::Mat& src, cv::Mat& output) {
-//	imshow("src", src);
 	Mat refineSrc;
 	removeBackground(src, refineSrc, 4);
 	displaceHist(refineSrc, refineSrc);
@@ -99,8 +101,6 @@ void hogGrid(const cv::Mat& src, cv::Mat& output) {
 	for (int i = 0; i < ders.size(); i++) {
 		output.at<float>(0, i) = ders.at(i);
 	}
-//		imshow("padSrc", padSrc);
-//		waitKey(0);
 }
 
 void hogPolar(const cv::Mat& src, cv::Mat& output);
