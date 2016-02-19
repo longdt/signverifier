@@ -18,8 +18,7 @@
 
 using boost::filesystem::path;
 using boost::filesystem::directory_iterator;
-using signverify::lbpGrid;
-using signverify::GlobalVerifier;
+using namespace signverify;
 using namespace cv;
 using namespace std;
 
@@ -35,7 +34,7 @@ void loadUIDData(const path& p, long id, vector<Mat>& data, Mat& labels) {
     int refCnt = 0;
     int forgCnt = 0;
     int label = 0;
-    int maxRefs = 15;
+    int maxRefs = 11;
     int maxForg = (maxRefs - 1) / 2;
     Mat temp(1, maxRefs + maxForg, CV_32SC1);
     int idx = 0;
@@ -62,6 +61,7 @@ void loadUIDData(const path& p, long id, vector<Mat>& data, Mat& labels) {
     labels.push_back(temp);
 }
 
+//tested
 void loadGData(vector<Mat>& data, Mat& labels) {
 	path p("/home/thienlong/Downloads/trainingSet/OfflineSignatures/Dutch/TrainingSet");
 	if (!exists(p) || !is_directory(p)) {
@@ -79,8 +79,8 @@ void loadGData(vector<Mat>& data, Mat& labels) {
 		loadUIDData(idpath, id, data, labels);
 	}
 }
-
-int main() {
+void loadMData(vector<Mat>& data, Mat& labels);
+int gmain() {
 	GlobalVerifier verifier(lbpGrid);
 	vector<Mat> data;
 	Mat labels;
@@ -91,7 +91,7 @@ int main() {
 	for (int r = 0; r < labels.rows; ++r) {
 		for (int c = 0; c < labels.cols; ++c) {
 			Mat sign = data[idx];
-			imshow("sign", sign);
+//			imshow("sign", sign);
 			int id = labels.at<int>(r, c);
 			if (id < 0) {
 				id = -id;
@@ -110,14 +110,27 @@ int main() {
 	for (int r = 0; r < labels.rows; ++r) {
 		for (int c = 0; c < labels.cols; ++c) {
 			Mat sign = data[idx];
-			imshow("sign", sign);
+//			imshow("sign", sign);
 			int id = labels.at<int>(r, c);
 			if (id < 0) {
 				id = -id;
 			}
 			cout << verifier.verify(sign, id) << "\texpected: " << labels.at<int>(r, c) << endl;
-			waitKey(0);
 			++idx;
+		}
+	}
+	cout << "test lan 3" <<endl;
+	data.clear();
+	labels = Mat();
+	loadMData(data, labels);
+	verifier.addRefs(data, labels);
+	path p("/home/thienlong/Downloads/Testdata_SigComp2011/SigComp11-Offlinetestset/Dutch/Questioned(1287)");
+	for (auto&& x : directory_iterator(p)) {
+		string uid = x.path().filename().string();
+		ulong id = stol(uid);
+		for (auto&& file : directory_iterator(x.path())) {
+			Mat sign = imread(file.path().string());
+			cout << file.path().string() << ":\t" << id << "\t" << verifier.verify(sign, id) << endl;
 		}
 	}
 }

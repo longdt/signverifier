@@ -8,10 +8,9 @@
 #include "signverifier.hpp"
 #include <stdexcept>
 
-#include "lbp.hpp"
 #include <cmath>
 
-#include "opencv2/objdetect/objdetect.hpp"
+
 #include "opencv2/imgproc/imgproc.hpp"
 
 using namespace std;
@@ -69,7 +68,10 @@ void computeStdDev(const Mat& src, Mat& sd) {
     sd.create(1, src.cols, CV_32FC1);
     for (int i = 0; i < src.cols; i++){
         cv::meanStdDev(src.col(i), meanValue, stdValue);
-        sd.at<float>(i) = stdValue.at<double>(0) + 0.0000000001f;
+        sd.at<float>(i) = stdValue.at<double>(0);
+        if (sd.at<float>(i) == 0) {
+        	sd.at<float>(i) = 0.0001f;
+        }
     }
 }
 
@@ -227,90 +229,4 @@ void MixtureVerifier::save(const std::string& filename) const {
 
 }
 //end mixture verifier
-
-//@tested
-void removeBackground(const cv::Mat& sign, cv::Mat& dist, int postLevel) {
-	dist.create(sign.size(), CV_8U);
-	for (int r = 0; r < sign.rows; ++r) {
-		for (int c = 0; c < sign.cols; ++c) {
-			int pixel = round(round(sign.at<uchar>(r, c) * postLevel / 255.0) * 255.0 / postLevel);
-			dist.at<uchar>(r, c) = (pixel == 255) ? 255 : sign.at<uchar>(r, c);
-		}
-	}
-}
-
-//@tested
-void displaceHist(const cv::Mat& sign, cv::Mat& dist) {
-	dist.create(sign.size(), CV_8U);
-	double min;
-	minMaxLoc(sign, &min);
-	int minPixel = min;
-	for (int r = 0; r < sign.rows; ++r) {
-		for (int c = 0; c < sign.cols; ++c) {
-			int pixel = sign.at<uchar>(r, c);
-			dist.at<uchar>(r, c) = (pixel == 255) ? 255 : pixel - minPixel;
-		}
-	}
-}
-
-void lbpGrid(const cv::Mat& src, cv::Mat& output) {
-//	imshow("src", src);
-	Mat refineSrc;
-	removeBackground(src, refineSrc, 4);
-	displaceHist(refineSrc, refineSrc);
-
-	int width = static_cast<int>(ceil(src.cols / (float) GRID_X));
-	int height = static_cast<int>(ceil(src.rows / (float) GRID_Y));
-	int padrigh = width * GRID_X - src.cols;
-	int padbottom = height * GRID_Y - src.rows;
-	Mat padSrc;
-	copyMakeBorder(refineSrc, padSrc, 0, padbottom, 0, padrigh, BORDER_CONSTANT, Scalar(255));
-//	imshow("padSrc", padSrc);
-//	waitKey(0);
-	spatialUniLbpHist(padSrc, output, GRID_X, GRID_Y);
-}
-
-void riuLbpGrid(const cv::Mat& src, cv::Mat& output) {
-//	imshow("src", src);
-	Mat refineSrc;
-	removeBackground(src, refineSrc, 4);
-	displaceHist(refineSrc, refineSrc);
-
-	int width = static_cast<int>(ceil(src.cols / (float) GRID_X));
-	int height = static_cast<int>(ceil(src.rows / (float) GRID_Y));
-	int padrigh = width * GRID_X - src.cols;
-	int padbottom = height * GRID_Y - src.rows;
-	Mat padSrc;
-	copyMakeBorder(refineSrc, padSrc, 0, padbottom, 0, padrigh, BORDER_CONSTANT, Scalar(255));
-//	imshow("padSrc", padSrc);
-//	waitKey(0);
-	spatialRiuLbpHist1_8(padSrc, output, GRID_X, GRID_Y);
-}
-
-void hogGrid(const cv::Mat& src, cv::Mat& output) {
-//	imshow("src", src);
-	Mat refineSrc;
-	removeBackground(src, refineSrc, 4);
-	displaceHist(refineSrc, refineSrc);
-
-	int width = static_cast<int>(ceil(src.cols / (float) GRID_X));
-	int height = static_cast<int>(ceil(src.rows / (float) GRID_Y));
-	int padrigh = width * GRID_X - src.cols;
-	int padbottom = height * GRID_Y - src.rows;
-	Mat padSrc;
-	copyMakeBorder(refineSrc, padSrc, 0, padbottom, 0, padrigh, BORDER_CONSTANT, Scalar(255));
-
-	HOGDescriptor hog(padSrc.size(), Size(width, height), Size(width, height), Size(width, height), 9);
-	vector<float> ders;
-	vector<Point> locs;
-	hog.compute(padSrc, ders, Size(0, 0), Size(0,0), locs);
-	output.create(1, ders.size(), CV_32FC1);
-	for (int i = 0; i < ders.size(); i++) {
-		output.at<float>(0, i) = ders.at(i);
-	}
-//		imshow("padSrc", padSrc);
-//		waitKey(0);
-}
-
-void hogPolar(const cv::Mat& src, cv::Mat& output);
 }

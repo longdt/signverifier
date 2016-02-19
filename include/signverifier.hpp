@@ -29,11 +29,6 @@ public:
 };
 
 typedef void (*FeatureExtracter)(const cv::Mat& src, cv::Mat& output);
-#define GRID_X 20
-#define GRID_Y 10
-#define POLAR_CORNER_ANGULAR 3
-#define POLAR_CENTER_ANGULAR 12
-#define POLAR_DISTANCE 15
 
 void lbpGrid(const cv::Mat& src, cv::Mat& output);
 void riuLbpGrid(const cv::Mat& src, cv::Mat& output);

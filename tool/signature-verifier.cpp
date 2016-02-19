@@ -41,7 +41,7 @@ void loadUData(ulong id, vector<Mat>& data, Mat& labels) {
 }
 
 int testID(ulong id) {
-	UserVerifier verifier(hogGrid);
+	UserVerifier verifier(riuLbpGrid);
 	vector<Mat> data;
 	Mat labels;
 	loadUData(id, data, labels);
