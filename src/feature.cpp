@@ -67,6 +67,29 @@ template <typename FeatureExtracter> void featureGrid(const cv::Mat& src, cv::Ma
 	output = output.reshape(0, 1);
 }
 
+template <typename FeatureExtracter> void featureOverlapGrid(const cv::Mat& src, cv::Mat& output, FeatureExtracter extractor) {
+	int width = static_cast<int>(ceil(src.cols / 5.0f));
+	int height = static_cast<int>(ceil(src.rows / 5.0f));
+	int padrigh = width * 5 - src.cols;
+	int padbottom = height * 5 - src.rows;
+	Mat padSrc;
+	copyMakeBorder(src, padSrc, 0, padbottom, 0, padrigh, BORDER_CONSTANT, Scalar(255));
+	Rect cell(0, 0, width, height);
+	for (int i = 0; i < 6; i++) {
+		cell.y = i * 0.8 * height;
+		for (int j = 0; j < 6; j++) {
+			cell.x = j * 0.8 * width;
+			Mat src_cell = padSrc(cell);
+			Mat cell_hist;
+			extractor(src_cell, cell_hist);
+			output.push_back(cell_hist);
+		}
+	}
+	output = output.reshape(0, 1);
+}
+
+#define featureGrid featureOverlapGrid
+
 void lbpGrid(const cv::Mat& src, cv::Mat& output) {
 	Mat refineSrc;
 	removeBackground(src, refineSrc, 4);
