@@ -162,5 +162,109 @@ void riuLbpHist1_8(const Mat & img_gray, Mat & hist) {
 	hist /= ((img.rows - 2) * (img.cols - 2));
 }
 
+void rlbpHist2_8_step0(const cv::Mat& img_gray, cv::Mat& hist) {
+	hist = Mat::zeros(1, 256, CV_32F);
+	Mat_<uchar> img(img_gray);
+	for (int r = 2; r < img.rows - 2; ++r) {
+		for (int c = 2; c < img.cols - 2; ++c) {
+			uchar v = 0;
+			uchar p = img(r, c);
+			v += (img(r - 2, c) > p) << 0;
+			v += (img(r - 2, c + 2) > p) << 1;
+			v += (img(r, c + 2) > p) << 2;
+			v += (img(r + 2, c + 2) > p) << 3;
+			v += (img(r + 2, c) > p) << 4;
+			v += (img(r + 2, c - 2) > p) << 5;
+			v += (img(r, c - 2) > p) << 6;
+			v += (img(r - 2, c - 2) > p) << 7;
+			hist.at<float>(0, v)++; // incr. the resp. histogram bin
+		}
+	}
+	hist /= ((img.rows - 4) * (img.cols - 4));
+}
+
+void rlbpHist2_8_step1(const cv::Mat& img_gray, cv::Mat& hist) {
+	hist = Mat::zeros(1, 256, CV_32F);
+	Mat_<uchar> img(img_gray);
+	for (int r = 2; r < img.rows - 2; ++r) {
+		for (int c = 2; c < img.cols - 2; ++c) {
+			uchar v = 0;
+			uchar p = img(r, c);
+			v += (img(r - 2, c + 1) > p) << 0;
+			v += (img(r - 1, c + 2) > p) << 1;
+			v += (img(r + 1, c + 2) > p) << 2;
+			v += (img(r + 2, c + 1) > p) << 3;
+			v += (img(r + 2, c - 1) > p) << 4;
+			v += (img(r + 1, c - 2) > p) << 5;
+			v += (img(r - 1, c - 2) > p) << 6;
+			v += (img(r - 2, c - 1) > p) << 7;
+			hist.at<float>(0, v)++; // incr. the resp. histogram bin
+		}
+	}
+	hist /= ((img.rows - 4) * (img.cols - 4));
+}
+
+void rlbpHist3_8_step0(const cv::Mat& img_gray, cv::Mat& hist) {
+	hist = Mat::zeros(1, 256, CV_32F);
+	Mat_<uchar> img(img_gray);
+	for (int r = 3; r < img.rows - 3; ++r) {
+		for (int c = 3; c < img.cols - 3; ++c) {
+			uchar v = 0;
+			uchar p = img(r, c);
+			v += (img(r - 3, c) > p) << 0;
+			v += (img(r - 3, c + 3) > p) << 1;
+			v += (img(r, c + 3) > p) << 2;
+			v += (img(r + 3, c + 3) > p) << 3;
+			v += (img(r + 3, c) > p) << 4;
+			v += (img(r + 3, c - 3) > p) << 5;
+			v += (img(r, c - 3) > p) << 6;
+			v += (img(r - 3, c - 3) > p) << 7;
+			hist.at<float>(0, v)++; // incr. the resp. histogram bin
+		}
+	}
+	hist /= ((img.rows - 6) * (img.cols - 6));
+}
+
+void rlbpHist3_8_step1(const cv::Mat& img_gray, cv::Mat& hist) {
+	hist = Mat::zeros(1, 256, CV_32F);
+	Mat_<uchar> img(img_gray);
+	for (int r = 3; r < img.rows - 3; ++r) {
+		for (int c = 3; c < img.cols - 3; ++c) {
+			uchar v = 0;
+			uchar p = img(r, c);
+			v += (img(r - 3, c + 1) > p) << 0;
+			v += (img(r - 2, c + 3) > p) << 1;
+			v += (img(r + 1, c + 3) > p) << 2;
+			v += (img(r + 3, c + 2) > p) << 3;
+			v += (img(r + 3, c - 1) > p) << 4;
+			v += (img(r + 2, c - 3) > p) << 5;
+			v += (img(r - 1, c - 3) > p) << 6;
+			v += (img(r - 3, c - 2) > p) << 7;
+			hist.at<float>(0, v)++; // incr. the resp. histogram bin
+		}
+	}
+	hist /= ((img.rows - 6) * (img.cols - 6));
+}
+
+void rlbpHist3_8_step2(const cv::Mat& img_gray, cv::Mat& hist) {
+	hist = Mat::zeros(1, 256, CV_32F);
+	Mat_<uchar> img(img_gray);
+	for (int r = 3; r < img.rows - 3; ++r) {
+		for (int c = 3; c < img.cols - 3; ++c) {
+			uchar v = 0;
+			uchar p = img(r, c);
+			v += (img(r - 3, c + 2) > p) << 0;
+			v += (img(r - 1, c + 3) > p) << 1;
+			v += (img(r + 2, c + 3) > p) << 2;
+			v += (img(r + 3, c + 1) > p) << 3;
+			v += (img(r + 3, c - 2) > p) << 4;
+			v += (img(r + 1, c - 3) > p) << 5;
+			v += (img(r - 2, c - 3) > p) << 6;
+			v += (img(r - 3, c - 1) > p) << 7;
+			hist.at<float>(0, v)++; // incr. the resp. histogram bin
+		}
+	}
+	hist /= ((img.rows - 6) * (img.cols - 6));
+}
 }
 

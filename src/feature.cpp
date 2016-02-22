@@ -71,7 +71,7 @@ void lbpGrid(const cv::Mat& src, cv::Mat& output) {
 	Mat refineSrc;
 	removeBackground(src, refineSrc, 4);
 	displaceHist(refineSrc, refineSrc);
-	featureGrid(refineSrc, output, lbpHist);
+	featureGrid(refineSrc, output, ulbpHist);
 }
 
 void riuLbpGrid(const cv::Mat& src, cv::Mat& output) {
@@ -80,6 +80,42 @@ void riuLbpGrid(const cv::Mat& src, cv::Mat& output) {
 	displaceHist(refineSrc, refineSrc);
 	featureGrid(refineSrc, output, riuLbpHist1_8);
 }
+
+void lbpGrid28_step0(const cv::Mat& src, cv::Mat& output) {
+	Mat refineSrc;
+	removeBackground(src, refineSrc, 4);
+	displaceHist(refineSrc, refineSrc);
+	featureGrid(refineSrc, output, rlbpHist2_8_step0);
+}
+
+void lbpGrid28_step1(const cv::Mat& src, cv::Mat& output) {
+	Mat refineSrc;
+	removeBackground(src, refineSrc, 4);
+	displaceHist(refineSrc, refineSrc);
+	featureGrid(refineSrc, output, rlbpHist2_8_step1);
+}
+
+void lbpGrid38_step0(const cv::Mat& src, cv::Mat& output) {
+	Mat refineSrc;
+	removeBackground(src, refineSrc, 4);
+	displaceHist(refineSrc, refineSrc);
+	featureGrid(refineSrc, output, rlbpHist3_8_step0);
+}
+
+void lbpGrid38_step1(const cv::Mat& src, cv::Mat& output) {
+	Mat refineSrc;
+	removeBackground(src, refineSrc, 4);
+	displaceHist(refineSrc, refineSrc);
+	featureGrid(refineSrc, output, rlbpHist3_8_step1);
+}
+
+void lbpGrid38_step2(const cv::Mat& src, cv::Mat& output) {
+	Mat refineSrc;
+	removeBackground(src, refineSrc, 4);
+	displaceHist(refineSrc, refineSrc);
+	featureGrid(refineSrc, output, rlbpHist3_8_step2);
+}
+
 
 void hogGrid(const cv::Mat& src, cv::Mat& output) {
 	Mat refineSrc;
