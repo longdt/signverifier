@@ -140,8 +140,9 @@ template <typename FeatureExtracter> void featureHierarchyLevelGrid(const cv::Ma
 	}
 }
 
+//l = 10 almost good for lbp, low l is for hog but not good
 template <typename FeatureExtracter> void featureHierarchyGrid(const cv::Mat& src, cv::Mat& output, FeatureExtracter extractor) {
-	for (int l = 0; l < 10; ++l) {
+	for (int l = 0; l < 4; ++l) {
 		featureHierarchyLevelGrid(src, output, extractor, l);
 	}
 	output = output.reshape(0, 1);
@@ -231,6 +232,11 @@ void hogGrid(const cv::Mat& src, cv::Mat& output) {
 	Mat refineSrc;
 	removeBackground(src, refineSrc, 4);
 	displaceHist(refineSrc, refineSrc);
+	removeNoise(refineSrc, refineSrc);
+//	Mat normal(128, 256, CV_8U);
+//	resize(refineSrc, normal, normal.size());
+//	imshow("normal", normal);
+//	waitKey(0);
 	featureGrid(refineSrc, output, hogHist);
 }
 
@@ -239,10 +245,10 @@ void phogGrid(const cv::Mat& src, cv::Mat& output) {
 	removeBackground(src, refineSrc, 4);
 	displaceHist(refineSrc, refineSrc);
 	removeNoise(refineSrc, refineSrc);
-	threshold(refineSrc, refineSrc, 0, 255, CV_THRESH_BINARY_INV | CV_THRESH_OTSU);
+//	threshold(refineSrc, refineSrc, 0, 255, CV_THRESH_BINARY_INV | CV_THRESH_OTSU);
 	Mat normal(128, 256, CV_8U);
 	resize(refineSrc, normal, normal.size());
-	int bin = 8;
+	int bin = 36;
 	output.create(1, bin * 21, CV_32F);
 	int idx = 0;
 	HOGDescriptor hog0(normal.size(), normal.size(), normal.size(), normal.size(), bin);
