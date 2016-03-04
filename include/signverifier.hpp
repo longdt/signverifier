@@ -18,6 +18,7 @@
 namespace signverify {
 void removeBackground(const cv::Mat& sign, cv::Mat& dist, int postLevel);
 void displaceHist(const cv::Mat& sign, cv::Mat& dist);
+void removeNoise(const cv::Mat& sign, cv::Mat& dst);
 
 class SignatureVerifier {
 public:
@@ -33,6 +34,7 @@ typedef void (*FeatureExtracter)(const cv::Mat& src, cv::Mat& output);
 void lbpGrid(const cv::Mat& src, cv::Mat& output);
 void riuLbpGrid(const cv::Mat& src, cv::Mat& output);
 void hogGrid(const cv::Mat& src, cv::Mat& output);
+void phogGrid(const cv::Mat& src, cv::Mat& output);
 void hogPolar(const cv::Mat& src, cv::Mat& output);
 
 class UserVerifier : public SignatureVerifier {

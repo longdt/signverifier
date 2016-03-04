@@ -8,7 +8,7 @@
 
 #include <opencv2/core/core.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
-
+#include <opencv2/objdetect/objdetect.hpp>
 #include "lbp.hpp"
 #include "hog.hpp"
 using namespace cv;
@@ -44,6 +44,35 @@ void displaceHist(const cv::Mat& sign, cv::Mat& dist) {
 			int pixel = sign.at<uchar>(r, c);
 			dist.at<uchar>(r, c) = (pixel == 255) ? 255 : pixel - minPixel;
 		}
+	}
+}
+
+//@tested
+void removeNoise(const cv::Mat& sign, cv::Mat& dst) {
+	Mat binary(sign.size(), sign.type());
+	//binary
+	for (int r = 0; r < sign.rows; ++r) {
+		for (int c = 0; c < sign.cols; ++c) {
+			binary.at<uchar>(r, c) = sign.at<uchar>(r, c) == 255 ? 0 : 255;
+		}
+	}
+//	threshold(sign, binary, 0, 255, CV_THRESH_BINARY_INV | CV_THRESH_OTSU);
+	//remove small blobs
+	vector<vector<Point>> contours;
+	vector<Vec4i> hierarchy;
+	findContours(binary, contours, hierarchy, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
+	vector<int> small_blobs;
+	double contour_area;
+	if (!contours.empty()) {
+	    for (size_t i=0; i<contours.size(); ++i) {
+	        contour_area = contourArea(contours[i]) ;
+	        if ( contour_area < 20)
+	            small_blobs.push_back(i);
+	    }
+	}
+	sign.copyTo(dst);
+	for (size_t i=0; i < small_blobs.size(); ++i) {
+	    drawContours(dst, contours, small_blobs[i], cv::Scalar(255), CV_FILLED, 8);
 	}
 }
 
@@ -124,7 +153,8 @@ void lbpGrid(const cv::Mat& src, cv::Mat& output) {
 	Mat refineSrc;
 	removeBackground(src, refineSrc, 4);
 	displaceHist(refineSrc, refineSrc);
-	featureGrid(refineSrc, output, ulbpHist);
+	removeNoise(refineSrc, refineSrc);
+	featureGrid(refineSrc, output, lbpHist);
 }
 
 void riuLbpGrid(const cv::Mat& src, cv::Mat& output) {
@@ -202,6 +232,42 @@ void hogGrid(const cv::Mat& src, cv::Mat& output) {
 	removeBackground(src, refineSrc, 4);
 	displaceHist(refineSrc, refineSrc);
 	featureGrid(refineSrc, output, hogHist);
+}
+
+void phogGrid(const cv::Mat& src, cv::Mat& output) {
+	Mat refineSrc;
+	removeBackground(src, refineSrc, 4);
+	displaceHist(refineSrc, refineSrc);
+	removeNoise(refineSrc, refineSrc);
+	threshold(refineSrc, refineSrc, 0, 255, CV_THRESH_BINARY_INV | CV_THRESH_OTSU);
+	Mat normal(128, 256, CV_8U);
+	resize(refineSrc, normal, normal.size());
+	int bin = 8;
+	output.create(1, bin * 21, CV_32F);
+	int idx = 0;
+	HOGDescriptor hog0(normal.size(), normal.size(), normal.size(), normal.size(), bin);
+	vector<float> ders;
+	hog0.compute(normal, ders);
+	for (size_t i = 0; i < ders.size(); i++) {
+		output.at<float>(0, idx) = ders.at(i);
+		++idx;
+	}
+	ders.clear();
+	hog0.cellSize = Size(normal.cols / 2, normal.rows / 2);
+	hog0.compute(normal, ders);
+	for (size_t i = 0; i < ders.size(); i++) {
+		output.at<float>(0, idx) = ders.at(i);
+		++idx;
+	}
+	ders.clear();
+	hog0.blockSize = hog0.cellSize;
+	hog0.blockStride = hog0.blockSize;
+	hog0.cellSize = Size(normal.cols / 4, normal.rows / 4);
+	hog0.compute(normal, ders);
+	for (size_t i = 0; i < ders.size(); i++) {
+		output.at<float>(0, idx) = ders.at(i);
+		++idx;
+	}
 }
 
 void hogPolar(const cv::Mat& src, cv::Mat& output);
